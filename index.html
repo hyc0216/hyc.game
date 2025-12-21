@@ -1,0 +1,1512 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft YaHei', 'Segoe UI', sans-serif;
+        }
+        
+        body {
+            background: url('https://pic3.zhimg.com/v2-5467960a07a088573ee3fb4cfc90b0c9_r.jpg') no-repeat center center fixed;
+            background-size: cover;
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.1);
+            z-index: -1;
+        }
+        
+        /* 雪花效果 */
+        .snowflake {
+            position: fixed;
+            background-color: rgba(102, 242, 255, 0.5); /* #66f2ff */
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px;
+            background: rgba(102, 204, 255, 0.2); /* #66ccff */
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(102, 204, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, #66ffe6, #66f2ff, #66ccff, #66a6ff, #6680ff); /* 蓝色渐变 */
+            background-size: 200% 100%;
+            animation: rainbow 3s linear infinite;
+        }
+        
+        @keyframes rainbow {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 200% 50%; }
+        }
+        
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+            color: #00EEEE;
+            text-shadow: 0 2px 10px rgba(0, 238, 238, 0.3);
+            font-weight: bold;
+        }
+        
+        .luotianyi-quote {
+            font-size: 1.4rem;
+            color: #66ccff;
+            font-style: italic;
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 10px;
+            background: rgba(102, 204, 255, 0.1);
+            display: inline-block;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .game-selector {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+        
+        .game-btn {
+            background: linear-gradient(145deg, rgba(102, 204, 255, 0.7), rgba(102, 166, 255, 0.7)); /* #66ccff to #66a6ff */
+            color: #003366;
+            border: none;
+            padding: 25px 40px;
+            font-size: 1.6rem;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 20px rgba(102, 204, 255, 0.3);
+            min-width: 220px;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(102, 204, 255, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .game-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: 0.5s;
+        }
+        
+        .game-btn:hover::before {
+            left: 100%;
+        }
+        
+        .game-btn:hover {
+            transform: translateY(-8px) scale(1.05);
+            box-shadow: 0 15px 30px rgba(102, 204, 255, 0.5);
+            background: linear-gradient(145deg, rgba(102, 204, 255, 0.9), rgba(102, 166, 255, 0.9));
+        }
+        
+        .game-btn:active {
+            transform: translateY(-2px);
+        }
+        
+        .game-icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .game-container {
+            display: none;
+            background: rgba(102, 204, 255, 0.15);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(102, 204, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .game-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, #66ffe6, #66f2ff, #66ccff, #66a6ff, #6680ff);
+        }
+        
+        .game-title {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 25px;
+            color: #66ccff;
+            text-shadow: 0 0 5px rgba(102, 204, 255, 0.3);
+            position: relative;
+            display: inline-block;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .game-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #66ccff, transparent);
+        }
+        
+        /* 规则弹出窗口样式 */
+        .rules-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        .rules-modal-content {
+            background: rgba(230, 245, 255, 0.95); /* 淡蓝色背景 */
+            padding: 40px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 700px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(102, 204, 255, 0.4);
+            border: 2px solid #66ccff;
+            animation: modalAppear 0.5s ease-out;
+            backdrop-filter: blur(20px);
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+        
+        .rules-modal-content::before {
+            content: '♪';
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 2rem;
+            color: rgba(102, 204, 255, 0.3);
+        }
+        
+        .rules-title {
+            font-size: 2.2rem;
+            margin-bottom: 25px;
+            color: #66ccff;
+            text-shadow: none;
+        }
+        
+        .rules-text {
+            line-height: 1.7;
+            font-size: 1.2rem;
+            text-align: left;
+            margin-bottom: 30px;
+            padding: 0 15px;
+            color: #003366;
+        }
+        
+        .rules-text p {
+            margin-bottom: 12px;
+            padding-left: 10px;
+            border-left: 3px solid #66ccff;
+            color: #003366;
+        }
+        
+        .rules-countdown {
+            font-size: 1.6rem;
+            margin: 25px 0;
+            color: #fff4b6; /* 点缀色 */
+            font-weight: bold;
+            text-shadow: none;
+        }
+        
+        .rules-close-btn {
+            background: linear-gradient(145deg, #66ccff, #66a6ff);
+            color: white;
+            border: none;
+            padding: 12px 35px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(102, 204, 255, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .rules-close-btn:hover {
+            background: linear-gradient(145deg, #76dcff, #76b6ff);
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(102, 204, 255, 0.6);
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes modalAppear {
+            from {
+                opacity: 0;
+                transform: scale(0.8) translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+        
+        .game-area {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        
+        .player-section, .computer-section {
+            background: rgba(102, 204, 255, 0.15);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(102, 204, 255, 0.2);
+        }
+        
+        .section-title {
+            font-size: 1.6rem;
+            margin-bottom: 15px;
+            color: #66f2ff; /* #66f2ff */
+            border-bottom: 2px solid #66f2ff;
+            padding-bottom: 8px;
+            text-shadow: 0 0 3px rgba(102, 242, 255, 0.3);
+        }
+        
+        .numbers-container, .stones-container {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .number-item, .stone-pile {
+            background: linear-gradient(145deg, rgba(102, 204, 255, 0.6), rgba(102, 166, 255, 0.6));
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.8rem;
+            font-weight: bold;
+            box-shadow: 0 8px 15px rgba(102, 204, 255, 0.3);
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            border: 2px solid rgba(102, 204, 255, 0.4);
+            color: #003366;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .number-item::before, .stone-pile::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .number-item:hover::before, .stone-pile:hover::before {
+            opacity: 1;
+        }
+        
+        .stone-pile {
+            width: 130px;
+            height: 130px;
+            flex-direction: column;
+            border-radius: 20px;
+        }
+        
+        .pile-count {
+            font-size: 3.2rem;
+            color: #fff4b6; /* 点缀色 */
+            text-shadow: 0 0 8px rgba(255, 244, 182, 0.3);
+        }
+        
+        .pile-label {
+            font-size: 1.1rem;
+            margin-top: 5px;
+            color: #66f2ff;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .control-row {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .control-btn {
+            background: linear-gradient(145deg, rgba(102, 242, 255, 0.7), rgba(102, 204, 255, 0.7));
+            color: #003366;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(102, 204, 255, 0.3);
+            box-shadow: 0 5px 15px rgba(102, 204, 255, 0.3);
+        }
+        
+        .control-btn:hover {
+            background: linear-gradient(145deg, rgba(122, 252, 255, 0.9), rgba(122, 224, 255, 0.9));
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(102, 204, 255, 0.5);
+        }
+        
+        .control-btn:disabled {
+            background: rgba(102, 102, 102, 0.5);
+            color: #666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .stone-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .pile-control {
+            background: rgba(102, 204, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(102, 204, 255, 0.2);
+        }
+        
+        select, input {
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid rgba(102, 204, 255, 0.6);
+            background: rgba(255, 255, 255, 0.95);
+            font-size: 1rem;
+            color: #333;
+        }
+        
+        .action-btn {
+            background: linear-gradient(145deg, rgba(102, 166, 255, 0.7), rgba(102, 204, 255, 0.7));
+            color: #003366;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.3rem;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(102, 204, 255, 0.3);
+            box-shadow: 0 5px 15px rgba(102, 204, 255, 0.3);
+        }
+        
+        .action-btn:hover {
+            background: linear-gradient(145deg, rgba(122, 186, 255, 0.9), rgba(122, 224, 255, 0.9));
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(102, 204, 255, 0.5);
+        }
+        
+        .console {
+            background: rgba(0, 0, 0, 0.15);
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 30px;
+            min-height: 120px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            overflow-y: auto;
+            max-height: 200px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(102, 204, 255, 0.2);
+        }
+        
+        .console-title {
+            color: #fff4b6; /* 点缀色 */
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+            text-shadow: 0 0 3px rgba(255, 244, 182, 0.3);
+        }
+        
+        .exit-btn {
+            background: linear-gradient(145deg, rgba(102, 204, 255, 0.7), rgba(102, 166, 255, 0.7));
+            color: #003366;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            margin: 30px auto 0;
+            display: block;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(102, 204, 255, 0.3);
+            box-shadow: 0 5px 15px rgba(102, 204, 255, 0.3);
+        }
+        
+        .exit-btn:hover {
+            background: linear-gradient(145deg, rgba(122, 224, 255, 0.9), rgba(122, 186, 255, 0.9));
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(102, 204, 255, 0.5);
+        }
+        
+        .move-counter {
+            text-align: center;
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: #fff4b6;
+            text-shadow: 0 0 3px rgba(255, 244, 182, 0.3);
+            background: rgba(102, 204, 255, 0.15);
+            padding: 10px;
+            border-radius: 10px;
+            display: inline-block;
+            position: relative;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        /* 结果弹出窗口样式 */
+        .result-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1001;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .result-modal-content {
+            background: rgba(230, 245, 255, 0.95);
+            padding: 50px;
+            border-radius: 25px;
+            width: 90%;
+            max-width: 550px;
+            text-align: center;
+            box-shadow: 0 20px 50px rgba(102, 204, 255, 0.4);
+            border: 2px solid #66ccff;
+            animation: modalAppear 0.5s ease-out;
+            backdrop-filter: blur(20px);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .result-modal-content::before {
+            content: '♪';
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 2rem;
+            color: rgba(102, 204, 255, 0.3);
+        }
+        
+        .result-modal-content::after {
+            content: '♪';
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            font-size: 2rem;
+            color: rgba(102, 204, 255, 0.3);
+        }
+        
+        .result-title {
+            font-size: 2.8rem;
+            margin-bottom: 20px;
+            color: #66ccff;
+            text-shadow: none;
+        }
+        
+        .result-message {
+            font-size: 1.4rem;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            white-space: pre-line;
+            color: #003366;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+        }
+        
+        .result-btn {
+            background: linear-gradient(145deg, #66ccff, #66a6ff);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            margin: 10px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 5px 15px rgba(102, 204, 255, 0.4);
+        }
+        
+        .result-btn:hover {
+            background: linear-gradient(145deg, #76dcff, #76b6ff);
+            transform: scale(1.05);
+            box-shadow: 0 8px 20px rgba(102, 204, 255, 0.6);
+        }
+        
+        .result-btn-restart {
+            background: linear-gradient(145deg, #66ccff, #66a6ff);
+        }
+        
+        .result-btn-restart:hover {
+            background: linear-gradient(145deg, #76dcff, #76b6ff);
+        }
+        
+        .result-btn-exit {
+            background: linear-gradient(145deg, #66a6ff, #66ccff);
+        }
+        
+        .result-btn-exit:hover {
+            background: linear-gradient(145deg, #76b6ff, #76dcff);
+        }
+        
+        .result-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+            animation: bounce 1s infinite alternate;
+        }
+        
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-20px); }
+        }
+        
+        .dead {
+            opacity: 0.5;
+            background: linear-gradient(145deg, rgba(85, 85, 85, 0.5), rgba(51, 51, 51, 0.5));
+        }
+        
+        .active {
+            border: 3px solid #fff4b6; /* 点缀色 */
+            box-shadow: 0 0 15px rgba(255, 244, 182, 0.5);
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+            
+            .luotianyi-quote {
+                font-size: 1.2rem;
+            }
+            
+            .game-selector {
+                flex-direction: column;
+                align-items: center;
+                gap: 20px;
+            }
+            
+            .game-btn {
+                width: 100%;
+                max-width: 300px;
+                padding: 20px 30px;
+                font-size: 1.4rem;
+            }
+            
+            .numbers-container, .stones-container {
+                gap: 15px;
+            }
+            
+            .number-item, .stone-pile {
+                width: 90px;
+                height: 90px;
+                font-size: 2.2rem;
+            }
+            
+            .stone-pile {
+                width: 110px;
+                height: 110px;
+            }
+            
+            .rules-modal-content,
+            .result-modal-content {
+                padding: 20px;
+                width: 95%;
+            }
+            
+            .rules-title {
+                font-size: 1.8rem;
+            }
+            
+            .result-title {
+                font-size: 2.2rem;
+            }
+            
+            .result-message {
+                font-size: 1.2rem;
+            }
+            
+            .control-row {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 雪花效果 -->
+    <div id="snowflakes"></div>
+    
+    <!-- 规则弹出窗口 -->
+    <div class="rules-modal-overlay" id="rulesModal">
+        <div class="rules-modal-content">
+            <h2 class="rules-title" id="rulesTitle">游戏规则</h2>
+            <div class="rules-text" id="rulesText"></div>
+            <div class="rules-countdown" id="rulesCountdown">窗口将在15秒后自动关闭</div>
+            <button class="rules-close-btn" id="rulesCloseBtn">关闭规则说明</button>
+        </div>
+    </div>
+    
+    <!-- 结果弹出窗口 -->
+    <div class="result-modal-overlay" id="resultModal">
+        <div class="result-modal-content">
+            <div class="result-icon" id="resultIcon">🎉</div>
+            <h2 class="result-title" id="resultTitle">游戏结束</h2>
+            <div class="result-message" id="resultMessage"></div>
+            <div>
+                <button class="result-btn result-btn-restart" id="resultRestartBtn">重新开始</button>
+                <button class="result-btn result-btn-exit" id="resultExitBtn">退出游戏</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <header>
+            <h1>My Game</h1>
+            <div class="luotianyi-quote">华风夏韵，洛水天依</div>
+        </header>
+        
+        <div class="game-selector">
+            <button class="game-btn" id="game1Btn">
+                <div class="game-icon">🔢</div>
+                <div>1+1 数字游戏</div>
+            </button>
+            <button class="game-btn" id="game2Btn">
+                <div class="game-icon">🪨</div>
+                <div>拿石子游戏</div>
+            </button>
+        </div>
+        
+        <!-- 1+1游戏容器 -->
+        <div class="game-container" id="game1Container">
+            <h2 class="game-title">1+1 数字游戏</h2>
+            
+            <div class="move-counter" id="moveCounter1">步数: 0 | 违例次数: 0</div>
+            
+            <div class="game-area">
+                <div class="player-section">
+                    <h3 class="section-title">你的数字</h3>
+                    <div class="numbers-container">
+                        <div class="number-item" id="playerNum1">1</div>
+                        <div class="number-item" id="playerNum2">1</div>
+                    </div>
+                    
+                    <h3 class="section-title">对手的数字</h3>
+                    <div class="numbers-container">
+                        <div class="number-item" id="opponentNum1">1</div>
+                        <div class="number-item" id="opponentNum2">1</div>
+                    </div>
+                    
+                    <div class="controls">
+                        <h3 class="section-title">你的操作</h3>
+                        <div class="control-row">
+                            <select id="playerNumSelect">
+                                <option value="1">你的数字1</option>
+                                <option value="2">你的数字2</option>
+                            </select>
+                            <span style="color:#66ccff; font-size:1.5rem;"> + </span>
+                            <select id="opponentNumSelect">
+                                <option value="1">对手数字1</option>
+                                <option value="2">对手数字2</option>
+                            </select>
+                        </div>
+                        <div class="control-row">
+                            <button class="control-btn" id="makeMoveBtn" disabled>执行操作</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="console">
+                    <div class="console-title">游戏控制台</div>
+                    <div id="game1Console">等待游戏开始...</div>
+                </div>
+                
+                <button class="exit-btn" id="exitGame1Btn" style="display:none;">退出游戏</button>
+            </div>
+        </div>
+        
+        <!-- 拿石子游戏容器 -->
+        <div class="game-container" id="game2Container">
+            <h2 class="game-title">拿石子游戏</h2>
+            
+            <div class="game-area">
+                <div class="player-section">
+                    <h3 class="section-title">石子堆</h3>
+                    <div class="stones-container" id="stonesContainer">
+                        <!-- 石子堆将通过JS动态生成 -->
+                    </div>
+                    
+                    <div class="controls">
+                        <h3 class="section-title">你的操作</h3>
+                        <div class="stone-controls">
+                            <!-- 石子控制将通过JS动态生成 -->
+                        </div>
+                        <button class="action-btn" id="takeStonesBtn" disabled>取出石子</button>
+                    </div>
+                </div>
+                
+                <div class="console">
+                    <div class="console-title">游戏控制台</div>
+                    <div id="game2Console">等待游戏开始...</div>
+                </div>
+                
+                <button class="exit-btn" id="exitGame2Btn" style="display:none;">退出游戏</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 游戏状态变量
+        let currentGame = null;
+        let game1Timer = null;
+        let game2Timer = null;
+        let rulesTimer = null;
+        let rulesTimeLeft = 15;
+        let game1Active = false;
+        let game2Active = false;
+        
+        // 1+1游戏状态
+        let game1State = {
+            playerNums: [1, 1],
+            opponentNums: [1, 1],
+            playerTurn: true,
+            gameOver: false,
+            moveCount: 0,
+            against: 0
+        };
+        
+        // 拿石子游戏状态
+        let game2State = {
+            piles: [], // 初始为空，将由C++算法生成
+            playerTurn: true,
+            gameOver: false,
+            selectedPile: null,
+            takeAmount: 1,
+            violationCount: 0
+        };
+        
+        // C++算法函数移植
+        function getRand(l, r) {
+            return Math.floor(Math.random() * (r - l + 1)) + l;
+        }
+        
+        function empty(stoneArray) {
+            for (let i = 0; i < 7; i++) {
+                if (stoneArray[i] > 0) return false;
+            }
+            return true;
+        }
+        
+        function getxor(stoneArray) {
+            let sum = 0;
+            for (let i = 0; i < 7; i++) {
+                sum = sum ^ stoneArray[i];
+            }
+            return sum;
+        }
+        
+        function generateStoneArray() {
+            const stoneArray = new Array(7);
+            let sum = 0;
+            
+            for (let i = 0; i < 6; i++) {
+                stoneArray[i] = getRand(1, 7);
+                sum = stoneArray[i] ^ sum;
+            }
+            
+            if (sum) {
+                stoneArray[6] = sum;
+            } else {
+                if (stoneArray[0] > 1) {
+                    stoneArray[0]--;
+                } else {
+                    stoneArray[0]++;
+                }
+                
+                sum = 0;
+                for (let i = 0; i < 6; i++) {
+                    sum = stoneArray[i] ^ sum;
+                }
+                stoneArray[6] = sum;
+            }
+            
+            return stoneArray;
+        }
+        
+        function computerMove(stoneArray) {
+            const Xor = getxor(stoneArray);
+            for (let i = 0; i < 7; i++) {
+                if (stoneArray[i] >= Xor) {
+                    stoneArray[i] -= Xor;
+                    break;
+                }
+            }
+            return stoneArray;
+        }
+        
+        // DOM元素
+        const game1Btn = document.getElementById('game1Btn');
+        const game2Btn = document.getElementById('game2Btn');
+        const game1Container = document.getElementById('game1Container');
+        const game2Container = document.getElementById('game2Container');
+        const makeMoveBtn = document.getElementById('makeMoveBtn');
+        const game1Console = document.getElementById('game1Console');
+        const game2Console = document.getElementById('game2Console');
+        const exitGame1Btn = document.getElementById('exitGame1Btn');
+        const exitGame2Btn = document.getElementById('exitGame2Btn');
+        const takeStonesBtn = document.getElementById('takeStonesBtn');
+        const moveCounter1 = document.getElementById('moveCounter1');
+        
+        // 规则窗口元素
+        const rulesModal = document.getElementById('rulesModal');
+        const rulesTitle = document.getElementById('rulesTitle');
+        const rulesText = document.getElementById('rulesText');
+        const rulesCountdown = document.getElementById('rulesCountdown');
+        const rulesCloseBtn = document.getElementById('rulesCloseBtn');
+        
+        // 结果窗口元素
+        const resultModal = document.getElementById('resultModal');
+        const resultTitle = document.getElementById('resultTitle');
+        const resultMessage = document.getElementById('resultMessage');
+        const resultIcon = document.getElementById('resultIcon');
+        const resultRestartBtn = document.getElementById('resultRestartBtn');
+        const resultExitBtn = document.getElementById('resultExitBtn');
+        
+        // 游戏按钮点击事件
+        game1Btn.addEventListener('click', () => {
+            showGame('game1');
+            showRules('game1');
+        });
+        
+        game2Btn.addEventListener('click', () => {
+            showGame('game2');
+            showRules('game2');
+        });
+        
+        // 退出按钮事件
+        exitGame1Btn.addEventListener('click', () => {
+            exitGame('game1');
+        });
+        
+        exitGame2Btn.addEventListener('click', () => {
+            exitGame('game2');
+        });
+        
+        // 规则关闭按钮事件
+        rulesCloseBtn.addEventListener('click', () => {
+            closeRules();
+        });
+        
+        // 结果窗口按钮事件
+        resultRestartBtn.addEventListener('click', () => {
+            resultModal.style.display = 'none';
+            if (currentGame === 'game1') {
+                startGame1();
+            } else if (currentGame === 'game2') {
+                startGame2();
+            }
+        });
+        
+        resultExitBtn.addEventListener('click', () => {
+            resultModal.style.display = 'none';
+            if (currentGame === 'game1') {
+                exitGame('game1');
+            } else if (currentGame === 'game2') {
+                exitGame('game2');
+            }
+        });
+        
+        // 显示指定游戏，隐藏其他
+        function showGame(game) {
+            currentGame = game;
+            
+            game1Container.style.display = 'none';
+            game2Container.style.display = 'none';
+            
+            if (game === 'game1') {
+                game1Container.style.display = 'block';
+            } else if (game === 'game2') {
+                game2Container.style.display = 'block';
+                renderStonePiles();
+                renderStoneControls();
+            }
+            
+            exitGame1Btn.style.display = 'none';
+            exitGame2Btn.style.display = 'none';
+        }
+        
+        // 显示规则窗口
+        function showRules(game) {
+            if (game === 'game1') {
+                rulesTitle.textContent = '1+1 游戏规则';
+                rulesText.innerHTML = `
+                    <p>1. 初始双方分别有两个数字1</p>
+                    <p>2. 双方轮流操作，每次操作可以选择自己存活的任意一个数字，加上对方存活的任意一个数字，然后取它的个位数</p>
+                    <p>3. 数字存活的定义：该数字不等于零</p>
+                    <p>4. 先让对方两个数字均不存活的一方获胜（注意：这里的获胜条件是让对方数字不存活）</p>
+                    <p>5. 如果双方已走50步以上不分胜负，则为平局</p>
+                `;
+                startGame1();
+            } else if (game === 'game2') {
+                rulesTitle.textContent = '拿石子游戏规则';
+                rulesText.innerHTML = `
+                    <p>1. 地上有7堆石子，初始每堆石子数量随机(1-10)</p>
+                    <p>2. 每人每次可从任意一堆石子里取出任意多枚石子扔掉</p>
+                    <p>3. 可以取完，不能不取</p>
+                    <p>4. 每次只能从一堆里取</p>
+                    <p>5. 最后没石子可取的人就输了</p>
+                `;
+                startGame2();
+            }
+            
+            rulesModal.style.display = 'flex';
+            rulesTimeLeft = 15;
+            rulesCountdown.textContent = `窗口将在${rulesTimeLeft}秒后自动关闭`;
+            
+            if (rulesTimer) clearInterval(rulesTimer);
+            
+            rulesTimer = setInterval(() => {
+                rulesTimeLeft--;
+                rulesCountdown.textContent = `窗口将在${rulesTimeLeft}秒后自动关闭`;
+                
+                if (rulesTimeLeft <= 0) {
+                    closeRules();
+                }
+            }, 1000);
+        }
+        
+        // 关闭规则窗口
+        function closeRules() {
+            rulesModal.style.display = 'none';
+            if (rulesTimer) {
+                clearInterval(rulesTimer);
+                rulesTimer = null;
+            }
+        }
+        
+        // 开始1+1游戏
+        function startGame1() {
+            game1State = {
+                playerNums: [1, 1],
+                opponentNums: [1, 1],
+                playerTurn: true,
+                gameOver: false,
+                moveCount: 0,
+                against: 0
+            };
+            
+            updateGame1Display();
+            game1Console.textContent = '游戏开始！你是先手。';
+            moveCounter1.textContent = `步数: ${game1State.moveCount} | 违例次数: ${game1State.against}`;
+            game1Active = true;
+            makeMoveBtn.disabled = false;
+            
+            if (game1State.playerTurn) {
+                game1Console.textContent += '\n轮到你操作了！';
+            }
+        }
+        
+        // 开始拿石子游戏
+        function startGame2() {
+            const generatedStones = generateStoneArray();
+            
+            game2State = {
+                piles: generatedStones,
+                playerTurn: true,
+                gameOver: false,
+                selectedPile: null,
+                takeAmount: 1,
+                violationCount: 0
+            };
+            
+            renderStonePiles();
+            renderStoneControls();
+            game2Console.textContent = `游戏开始！石子堆初始状态：${generatedStones.join(' ')}`;
+            game2Active = true;
+            takeStonesBtn.disabled = false;
+            
+            if (game2State.playerTurn) {
+                game2Console.textContent += '\n轮到你操作了！选择石子堆和数量，然后点击"取出石子"。';
+            }
+        }
+        
+        // 更新1+1游戏显示
+        function updateGame1Display() {
+            document.getElementById('playerNum1').textContent = game1State.playerNums[0];
+            document.getElementById('playerNum2').textContent = game1State.playerNums[1];
+            document.getElementById('opponentNum1').textContent = game1State.opponentNums[0];
+            document.getElementById('opponentNum2').textContent = game1State.opponentNums[1];
+            
+            updateNumberStatus('playerNum1', game1State.playerNums[0]);
+            updateNumberStatus('playerNum2', game1State.playerNums[1]);
+            updateNumberStatus('opponentNum1', game1State.opponentNums[0]);
+            updateNumberStatus('opponentNum2', game1State.opponentNums[1]);
+            
+            updateSelectOptions();
+            moveCounter1.textContent = `步数: ${game1State.moveCount} | 违例次数: ${game1State.against}`;
+        }
+        
+        // 更新数字状态显示
+        function updateNumberStatus(elementId, value) {
+            const element = document.getElementById(elementId);
+            if (value === 0) {
+                element.classList.add('dead');
+            } else {
+                element.classList.remove('dead');
+            }
+        }
+        
+        // 更新1+1游戏选择框选项
+        function updateSelectOptions() {
+            const playerSelect = document.getElementById('playerNumSelect');
+            const opponentSelect = document.getElementById('opponentNumSelect');
+            
+            playerSelect.innerHTML = '';
+            opponentSelect.innerHTML = '';
+            
+            if (game1State.playerNums[0] !== 0) {
+                playerSelect.innerHTML += '<option value="1">你的数字1 (' + game1State.playerNums[0] + ')</option>';
+            }
+            if (game1State.playerNums[1] !== 0) {
+                playerSelect.innerHTML += '<option value="2">你的数字2 (' + game1State.playerNums[1] + ')</option>';
+            }
+            
+            if (game1State.opponentNums[0] !== 0) {
+                opponentSelect.innerHTML += '<option value="1">对手数字1 (' + game1State.opponentNums[0] + ')</option>';
+            }
+            if (game1State.opponentNums[1] !== 0) {
+                opponentSelect.innerHTML += '<option value="2">对手数字2 (' + game1State.opponentNums[1] + ')</option>';
+            }
+            
+            playerSelect.disabled = playerSelect.options.length === 0;
+            opponentSelect.disabled = opponentSelect.options.length === 0;
+        }
+        
+        // 渲染石子堆
+        function renderStonePiles() {
+            const stonesContainer = document.getElementById('stonesContainer');
+            stonesContainer.innerHTML = '';
+            
+            game2State.piles.forEach((count, index) => {
+                const pileElement = document.createElement('div');
+                pileElement.className = 'stone-pile';
+                pileElement.id = `pile-${index}`;
+                pileElement.innerHTML = `
+                    <div class="pile-count">${count}</div>
+                    <div class="pile-label">堆 ${index + 1}</div>
+                `;
+                
+                pileElement.addEventListener('click', () => {
+                    if (!game2Active || !game2State.playerTurn || game2State.gameOver) return;
+                    
+                    document.querySelectorAll('.stone-pile').forEach(pile => {
+                        pile.classList.remove('active');
+                    });
+                    
+                    pileElement.classList.add('active');
+                    game2State.selectedPile = index;
+                    
+                    game2Console.textContent += `\n已选择第 ${index + 1} 堆石子，当前有 ${count} 个石子。`;
+                });
+                
+                stonesContainer.appendChild(pileElement);
+            });
+        }
+        
+        // 渲染石子控制
+        function renderStoneControls() {
+            const stoneControls = document.querySelector('.stone-controls');
+            stoneControls.innerHTML = '';
+            
+            game2State.piles.forEach((count, index) => {
+                const controlElement = document.createElement('div');
+                controlElement.className = 'pile-control';
+                controlElement.innerHTML = `
+                    <label for="pile-${index}-select" style="color:#66f2ff;">堆 ${index + 1} (${count}个石子):</label>
+                    <select id="pile-${index}-select" onchange="selectPile(${index})">
+                        <option value="0">选择数量</option>
+                    </select>
+                `;
+                
+                const selectElement = controlElement.querySelector(`#pile-${index}-select`);
+                for (let i = 1; i <= count; i++) {
+                    selectElement.innerHTML += `<option value="${i}">取出 ${i} 个</option>`;
+                }
+                
+                stoneControls.appendChild(controlElement);
+            });
+        }
+        
+        // 选择石子堆
+        function selectPile(pileIndex) {
+            if (!game2Active || !game2State.playerTurn || game2State.gameOver) return;
+            
+            const selectElement = document.getElementById(`pile-${pileIndex}-select`);
+            const takeAmount = parseInt(selectElement.value);
+            
+            if (takeAmount > 0) {
+                game2State.selectedPile = pileIndex;
+                game2State.takeAmount = takeAmount;
+                
+                document.querySelectorAll('.stone-pile').forEach(pile => {
+                    pile.classList.remove('active');
+                });
+                
+                document.getElementById(`pile-${pileIndex}`).classList.add('active');
+                game2Console.textContent += `\n已选择从第 ${pileIndex + 1} 堆取出 ${takeAmount} 个石子。`;
+            }
+        }
+        
+        // 显示结果弹出窗口
+        function showResultModal(result, message, game) {
+            if (game === 'game1') {
+                game1State.gameOver = true;
+                game1Active = false;
+                makeMoveBtn.disabled = true;
+            } else if (game === 'game2') {
+                game2State.gameOver = true;
+                game2Active = false;
+                takeStonesBtn.disabled = true;
+            }
+            
+            if (result === 'win') {
+                resultIcon.textContent = '🏆';
+            } else if (result === 'lose') {
+                resultIcon.textContent = '💔';
+            } else {
+                resultIcon.textContent = '🤝';
+            }
+            
+            resultMessage.textContent = message;
+            resultModal.style.display = 'flex';
+            
+            if (game === 'game1') {
+                game1Console.textContent += `\n${message}`;
+            } else if (game === 'game2') {
+                game2Console.textContent += `\n${message}`;
+            }
+        }
+        
+        // 1+1游戏执行操作
+        makeMoveBtn.addEventListener('click', () => {
+            if (!game1Active || !game1State.playerTurn || game1State.gameOver) return;
+            
+            const playerNumSelect = document.getElementById('playerNumSelect');
+            const opponentNumSelect = document.getElementById('opponentNumSelect');
+            
+            const playerNumIndex = parseInt(playerNumSelect.value) - 1;
+            const opponentNumIndex = parseInt(opponentNumSelect.value) - 1;
+            
+            if (game1State.playerNums[playerNumIndex] === 0 || game1State.opponentNums[opponentNumIndex] === 0 || 
+                playerNumIndex < 0 || playerNumIndex > 1 || opponentNumIndex < 0 || opponentNumIndex > 1) {
+                game1State.against++;
+                game1Console.textContent += '\n违例了哦，再有一次判你输信不信^-^';
+                
+                if (game1State.against >= 2) {
+                    showResultModal('lose', '你输了，不听话的孩子要受到惩罚^-^', 'game1');
+                    return;
+                }
+                
+                updateGame1Display();
+                return;
+            }
+            
+            const result = (game1State.playerNums[playerNumIndex] + game1State.opponentNums[opponentNumIndex]) % 10;
+            game1State.playerNums[playerNumIndex] = result;
+            game1State.moveCount++;
+            
+            updateGame1Display();
+            
+            const operation = `你操作：你的数字${playerNumIndex+1} + 对手数字${opponentNumIndex+1} = ${result}`;
+            game1Console.textContent += '\n' + operation;
+            
+            if (checkGame1Over()) return;
+            
+            if (!game1State.gameOver) {
+                game1State.playerTurn = false;
+                game1Console.textContent += '\n对手思考中...';
+                makeMoveBtn.disabled = true;
+                
+                setTimeout(() => {
+                    // 电脑AI逻辑
+                    const player = game1State.playerNums;
+                    const computer = game1State.opponentNums;
+                    
+                    let flag = 0;
+                    for (let i = 1; i >= 0; i--) {
+                        for (let j = 1; j >= 0; j--) {
+                            if (flag) break;
+                            if (computer[i] + player[j] === 10) {
+                                let otheri = (i === 0) ? 1 : 0;
+                                let otherj = (j === 0) ? 1 : 0;
+                                computer[i] = (computer[i] + player[otherj]) % 10;
+                                flag = 1;
+                            }
+                        }
+                    }
+                    
+                    if (!flag) {
+                        computer[0] = (computer[0] + player[1]) % 10;
+                    }
+                    
+                    game1State.moveCount++;
+                    updateGame1Display();
+                    
+                    if (checkGame1Over()) return;
+                    
+                    if (!game1State.gameOver) {
+                        game1State.playerTurn = true;
+                        game1Console.textContent += '\n轮到你操作了！';
+                        makeMoveBtn.disabled = false;
+                    }
+                }, 1000);
+            }
+        });
+        
+        // 拿石子游戏执行操作
+        takeStonesBtn.addEventListener('click', () => {
+            if (!game2Active || !game2State.playerTurn || game2State.gameOver) return;
+            
+            if (game2State.selectedPile === null) {
+                game2Console.textContent += '\n请先选择一堆石子！';
+                return;
+            }
+            
+            const pileIndex = game2State.selectedPile;
+            const takeAmount = game2State.takeAmount;
+            
+            if (pileIndex < 0 || pileIndex > 6 || game2State.piles[pileIndex] < takeAmount) {
+                game2State.violationCount++;
+                game2Console.textContent += '\n违例了哦，再有一次判你输信不信^-^';
+                
+                if (game2State.violationCount >= 2) {
+                    showResultModal('lose', '你输了，不听话的孩子要受到惩罚^-^', 'game2');
+                    return;
+                }
+                
+                return;
+            }
+            
+            game2State.piles[pileIndex] -= takeAmount;
+            const operation = `你从第 ${pileIndex + 1} 堆取出了 ${takeAmount} 个石子`;
+            game2Console.textContent += '\n' + operation + '\n当前石子堆：' + game2State.piles.join(' ');
+            
+            if (empty(game2State.piles)) {
+                showResultModal('win', '我还会再回来的\n恭喜你，快点截屏找hyc领2块钱吧', 'game2');
+                return;
+            }
+            
+            renderStonePiles();
+            renderStoneControls();
+            
+            if (!game2State.gameOver) {
+                game2State.playerTurn = false;
+                game2Console.textContent += '\n对手思考中...';
+                takeStonesBtn.disabled = true;
+                
+                setTimeout(() => {
+                    const newPiles = computerMove([...game2State.piles]);
+                    game2State.piles = newPiles;
+                    
+                    renderStonePiles();
+                    renderStoneControls();
+                    game2Console.textContent += `\n对手操作完成\n当前石子堆：${game2State.piles.join(' ')}`;
+                    
+                    if (empty(game2State.piles)) {
+                        showResultModal('lose', '大人，时代变了', 'game2');
+                        return;
+                    }
+                    
+                    if (!game2State.gameOver) {
+                        game2State.playerTurn = true;
+                        game2Console.textContent += '\n轮到你操作了！选择石子堆和数量，然后点击"取出石子"。';
+                        takeStonesBtn.disabled = false;
+                    }
+                }, 1000);
+            }
+        });
+        
+        // 检查1+1游戏是否结束
+        function checkGame1Over() {
+            if (game1State.moveCount >= 50) {
+                showResultModal('draw', '你永远赢不了我', 'game1');
+                return true;
+            }
+            
+            const opponentAllDead = game1State.opponentNums[0] === 0 && game1State.opponentNums[1] === 0;
+            const playerAllDead = game1State.playerNums[0] === 0 && game1State.playerNums[1] === 0;
+            
+            if (playerAllDead && !opponentAllDead) {
+                showResultModal('lose', '菜就多练', 'game1');
+                return true;
+            } else if (opponentAllDead && !playerAllDead) {
+                showResultModal('win', '我还会再回来的\n恭喜你，快点截屏找hyc领2块钱吧', 'game1');
+                return true;
+            } else if (playerAllDead && opponentAllDead) {
+                showResultModal('draw', '平局！双方数字都不存活。', 'game1');
+                return true;
+            }
+            
+            return false;
+        }
+        
+        // 退出游戏
+        function exitGame(game) {
+            if (game === 'game1') {
+                game1Container.style.display = 'none';
+                clearInterval(game1Timer);
+                game1Active = false;
+            } else if (game === 'game2') {
+                game2Container.style.display = 'none';
+                clearInterval(game2Timer);
+                game2Active = false;
+            }
+            
+            currentGame = null;
+        }
+        
+        // 雪花效果
+        function createSnowflakes() {
+            const snowflakesContainer = document.getElementById('snowflakes');
+            for (let i = 0; i < 50; i++) {
+                const snowflake = document.createElement('div');
+                snowflake.classList.add('snowflake');
+                
+                const size = Math.random() * 10 + 5;
+                snowflake.style.width = `${size}px`;
+                snowflake.style.height = `${size}px`;
+                snowflake.style.left = `${Math.random() * 100}vw`;
+                snowflake.style.top = `${Math.random() * 100}vh`;
+                snowflake.style.opacity = Math.random() * 0.7 + 0.3;
+                
+                const duration = Math.random() * 10 + 10;
+                const delay = Math.random() * 5;
+                snowflake.style.animation = `fall ${duration}s linear ${delay}s infinite`;
+                
+                snowflakesContainer.appendChild(snowflake);
+            }
+        }
+        
+        // 添加雪花动画
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fall {
+                0% {
+                    transform: translateY(-100px) rotate(0deg);
+                }
+                100% {
+                    transform: translateY(100vh) rotate(360deg);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // 初始化页面
+        function init() {
+            game1Container.style.display = 'none';
+            game2Container.style.display = 'none';
+            createSnowflakes();
+        }
+        
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
