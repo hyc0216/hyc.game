@@ -6,7 +6,6 @@
  <title>My Game (Desktop)</title>
 
  <style>
-   /* 样式部分保持不变 */
    :root{
      --c1:#0099FF;
      --c2:#00CCCC;
@@ -20,7 +19,8 @@
 
    *{margin:0;padding:0;box-sizing:border-box;font-family:'Microsoft YaHei','Segoe UI',sans-serif;}
    body{
-     background:url('https://pic3.zhimg.com/v2-5467960a07a088573ee3fb4cfc90b0c9_r.jpg') no-repeat center center fixed;
+     /* 在这里修改背景图片链接 ↓↓↓ */
+     background:url('https://https://s3.imagency.cn/e/a4408a4743196953e13354223900f56e.png') no-repeat center center fixed;
      background-size:cover;
      color:var(--c5);
      min-height:100vh;
@@ -260,6 +260,7 @@
    }
    .console-title{margin-bottom:10px;font-size:1.2rem;font-weight:900;color: rgba(255,255,255,0.95);}
 
+   /* 修改：步数框右移 */
    .move-counter{
      text-align:right;font-size:1.3rem;margin-bottom:15px;
      color: rgba(255,255,255,0.95);
@@ -293,6 +294,7 @@
    .result-btn:hover{transform:scale(1.05);box-shadow:0 12px 26px rgba(0,51,204,0.2);}
    .result-btn-exit{background:linear-gradient(145deg,var(--c6),var(--c1));}
 
+   /* 拿石子部分（保持你之前版本） */
    .stone-board{display:flex;flex-direction:column;gap:18px;}
    .piles-row{display:flex;flex-wrap:wrap;justify-content:center;gap:14px;}
    .pile-box{
@@ -376,7 +378,7 @@
 </head>
 
 <body>
- <!-- 插入音乐播放器 -->
+ <!-- 插入音乐播放器（已替换为新链接） -->
  <iframe frameborder="no" border="0" marginwidth="0" marginheight="0" width=330 height=86 src="https://music.163.com/outchain/player?type=2&id=2101145263&auto=0&height=66"></iframe>
  
  <div id="snowflakes"></div>
@@ -404,7 +406,7 @@
    </div>
  </div>
 
- <!-- 提醒弹窗 -->
+ <!-- 提醒弹窗（也用于 30 回合选择） -->
  <div class="result-modal-overlay" id="alertModal" style="z-index:1002;">
    <div class="result-modal-content">
      <div class="result-icon" id="alertIcon">⚠️</div>
@@ -436,7 +438,8 @@
    <!-- 1+1 -->
    <div class="game-container" id="game1Container">
      <h2 class="game-title">1+1 数字游戏</h2>
-     <div class="move-counter" id="moveCounter1">回合: 0</div>
+     <!-- 修改：移除拒绝次数显示 -->
+     <div class="move-counter" id="moveCounter1">回合: 0 | 违例次数: 0</div>
 
      <div class="game-area">
        <div class="player-section">
@@ -464,7 +467,7 @@
      </div>
    </div>
 
-   <!-- 拿石子游戏 -->
+   <!-- 拿石子（保持你之前版本：6 堆、颜色 #a9a9a9） -->
    <div class="game-container" id="game2Container">
      <h2 class="game-title">拿石子游戏</h2>
 
@@ -492,10 +495,9 @@
  </div>
 
  <script>
-   // 石子堆数量
    const PILE_COUNT = 6;
 
-   // ====== 1+1游戏相关（保持不变）=====
+   // ====== 1+1：res 表（保持你的 C++ 原版） ======
    const res=[
      [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
      [-1,1,0,0.5,0,0,1,1,0.5,1],
@@ -516,97 +518,262 @@
    let game1Active=false;
    let game2Active=false;
 
-   // 1+1游戏状态
+   // ====== 1+1 状态 ======
    let game1State={
      playerNums:[1,1],
      opponentNums:[1,1],
      playerTurn:true,
      gameOver:false,
-     rounds:0,
-     jujue:0,
-     vis: Array.from({length:10},()=>Array(10).fill(false))
+     rounds:0,          // 对应 C++ cnt（每一轮结束 cnt++）
+     against:0,         // 违例次数
+     jujue:0,           // 拒绝次数
+     vis: Array.from({length:10},()=>Array(10).fill(false)) // 对应 C++ vis
    };
 
    let pick={playerIdx:null,oppIdx:null};
 
-   // 拿石子游戏状态
+   // ====== 2：拿石子状态（保持你之前版本） ======
    let game2State={
      piles:[],
      playerTurn:true,
      gameOver:false,
+     violationCount:0,
      pending:{pile:null,count:0},
      aiBusy:false
    };
 
-   // ====== 移植C++代码中的算法 ======
-   
-   // 1. getRand函数（与C++相同）
-   function getRand(l,r){
-     return Math.floor(Math.random()*(r-l+1))+l;
+   function resetVis(){
+     game1State.vis = Array.from({length:10},()=>Array(10).fill(false));
    }
-   
-   // 2. empty函数（判断石子是否为空）
-   function empty(a){
-     for(let i=0;i<PILE_COUNT;i++) if(a[i]>0) return false;
+
+   // =========================
+   // ===== C++ dfs（原版）=====
+   // 这段函数就是你 C++ 的 dfs() 逐分支搬过来
+   // =========================
+   function dfs(cnt, a, b, c, lc){
+     if (c === 0) return 0; // 只有一只手的一方赢
+
+     if ((b === 0 && res[c][a] === 1) || (a === 0 && res[c][b] === 1)) return 0;
+     if ((b === 0 && res[c][a] === 0) || (a === 0 && res[c][b] === 0)) return 1;
+     if ((b === 0 && res[c][a] === 0.5) || (a === 0 && res[c][b] === 0.5)) return 0.5;
+
+     if (cnt === 25) return 0.5; // 无法判断
+
+     if (lc === 0){
+       // 轮到只有一只手的一方
+       const ans1 = dfs(cnt + 1, a, b, (c + a) % 10, 1);
+       const ans2 = dfs(cnt + 1, a, b, (c + b) % 10, 1);
+       if (ans1 === 1 && ans2 === 1) return 1;
+       else if (ans1 === 0 || ans2 === 0) return 0;
+       else return 0.5;
+     } else {
+       // 轮到有两只手的一方
+       const ans1 = dfs(cnt + 1, (c + a) % 10, b, c, 0);
+       const ans2 = dfs(cnt + 1, a, (c + b) % 10, c, 0);
+       if (ans1 === 0 && ans2 === 0) return 0;
+       else if (ans1 === 1 || ans2 === 1) return 1;
+       else return 0.5;
+     }
+   }
+
+   // ==========================================================
+   // ===== 电脑走子逻辑（完整搬 C++：while 里玩家走完后的部分）=====
+   // 这整个 computerAI() 对应你 C++ 里那一大坨 if/else 分支
+   // ==========================================================
+   function computerAI(){
+     const player = game1State.playerNums;     // player[1],player[2] => player[0],player[1]
+     const computer = game1State.opponentNums; // computer[1],computer[2] => computer[0],computer[1]
+
+     // === 分支 1：双方都两只手 ===
+     if (player[0]!==0 && player[1]!==0 && computer[0]!==0 && computer[1]!==0){
+       let flag = 0;
+       const random_number = Math.floor(Math.random()*2);
+
+       // --- 第一段：优先找 computer[i] + player[j] == 10 ---
+       for (let i=1;i<=2;i++){
+         for (let j=2;j>=1;j--){
+           if (flag) break;
+           if (computer[i-1] + player[j-1] === 10){
+             const otheri = (i===1)?2:1;
+             const otherj = (j===1)?2:1;
+             if (dfs(0, player[j-1], player[otherj-1], computer[otheri-1], 1) < 1){
+               computer[i-1] = (computer[i-1] + player[j-1]) % 10;
+               flag = 1;
+             }else{
+               computer[i-1] = (computer[i-1] + player[otherj-1]) % 10;
+               flag = 1;
+             }
+           }
+         }
+       }
+
+       // --- 第二段：random 扫描策略（包含 bo 判断）---
+       if (!flag){
+         if (random_number){
+           for (let i=1;i<=2;i++){
+             for (let j=1;j<=2;j++){
+               if (flag) break;
+               const otheri = (i===1)?2:1;
+               const q = (computer[i-1] + player[j-1]) % 10;
+
+               let bo = 0;
+               for (let px=1; px<=2; px++){
+                 if (player[px-1]===0) continue;
+                 if (flag) continue;
+                 if (player[px-1] + q === 10){
+                   const opx = (px===1)?2:1;
+                   if (dfs(0, player[otheri-1], q, computer[opx-1], 1) > 0){
+                     computer[i-1] = q;
+                     flag = 1;
+                   }
+                   bo = 1;
+                 }
+               }
+               if (!bo){
+                 computer[i-1] = q;
+                 flag = 1;
+               }
+             }
+           }
+         }else{
+           for (let i=2;i>=1;i--){
+             for (let j=2;j>=1;j--){
+               if (flag) break;
+               const otheri = (i===1)?2:1;
+               const q = (computer[i-1] + player[j-1]) % 10;
+
+               let bo = 0;
+               for (let px=1; px<=2; px++){
+                 if (player[px-1]===0) continue;
+                 if (flag) continue;
+                 if (player[px-1] + q === 10){
+                   const opx = (px===1)?2:1;
+                   if (dfs(0, player[opx-1], q, computer[otheri-1], 1) > 0){
+                     computer[i-1] = q;
+                     flag = 1;
+                   }
+                   bo = 1;
+                 }
+               }
+               if (!bo){
+                 computer[i-1] = q;
+                 flag = 1;
+               }
+             }
+           }
+         }
+       }
+
+       // --- 第三段：避免变成同值（(computer[i]+player[j])%10 != other hand）---
+       if (!flag){
+         if (random_number){
+           for (let i=1;i<=2;i++){
+             for (let j=1;j<=2;j++){
+               if (flag) break;
+               const otheri = (i===1)?2:1;
+               if ((computer[i-1] + player[j-1]) % 10 !== computer[otheri-1]){
+                 computer[i-1] = (computer[i-1] + player[j-1]) % 10;
+                 flag = 1;
+               }
+             }
+           }
+         }else{
+           for (let i=2;i>=1;i--){
+             for (let j=2;j>=1;j--){
+               if (flag) break;
+               const otheri = (i===1)?2:1;
+               if ((computer[i-1] + player[j-1]) % 10 !== computer[otheri-1]){
+                 computer[i-1] = (computer[i-1] + player[j-1]) % 10;
+                 flag = 1;
+               }
+             }
+           }
+         }
+       }
+
+       // --- 兜底 ---
+       if (!flag){
+         computer[0] = (computer[0] + player[1]) % 10; // 对应 C++ 最后 computer[1] = (computer[1] + player[2])%10
+       }
+       return true;
+     }
+
+     // === 分支 2：玩家一手，电脑两手 ===
+     if ((player[0]===0 || player[1]===0) && computer[0]!==0 && computer[1]!==0){
+       const x = (player[0]===0) ? 2 : 1;
+       if (dfs(0, (computer[0] + player[x-1]) % 10, computer[1], player[x-1], 0)){
+         computer[0] = (computer[0] + player[x-1]) % 10;
+       }else{
+         computer[1] = (computer[1] + player[x-1]) % 10;
+       }
+       return true;
+     }
+
+     // === 分支 3：玩家两手，电脑一手 ===
+     if (player[0]!==0 && player[1]!==0 && (computer[0]===0 || computer[1]===0)){
+       const Alive = (computer[0]===0) ? 2 : 1;
+       if (dfs(0, player[0], player[1], (computer[Alive-1] + player[0]) % 10, 1) < 1){
+         computer[Alive-1] = (computer[Alive-1] + player[0]) % 10;
+       }else{
+         computer[Alive-1] = (computer[Alive-1] + player[1]) % 10;
+       }
+       return true;
+     }
+
+     // === 分支 4：双方一手：vis 判平局 ===
+     const x = (player[0]===0) ? 2 : 1;
+     const y = (computer[0]===0) ? 2 : 1;
+
+     const pv = player[x-1];
+     const cv = computer[y-1];
+
+     if (game1State.vis[pv][cv]){
+       endGame1Draw("平局");
+       return false;
+     }
+     game1State.vis[pv][cv] = true;
+
+     computer[y-1] = (computer[y-1] + player[x-1]) % 10;
+
+     const cv2 = computer[y-1];
+     if (game1State.vis[pv][cv2]){
+       endGame1Draw("平局");
+       return false;
+     }
+     game1State.vis[pv][cv2] = true;
+
      return true;
    }
-   
-   // 3. getxor函数（计算异或和）
-   function getxor(a){
-     let x=0;
-     for(let i=0;i<PILE_COUNT;i++) x^=a[i];
-     return x;
-   }
-   
-   // 4. 生成石子数组（按照C++逻辑移植）
+
+   // ====== 拿石子：工具函数（保持你之前版本） ======
+   function getRand(l,r){return Math.floor(Math.random()*(r-l+1))+l;}
+   function empty(a){for(let i=0;i<PILE_COUNT;i++) if(a[i]>0) return false; return true;}
+   function getxor(a){let x=0; for(let i=0;i<PILE_COUNT;i++) x^=a[i]; return x;}
+
    function generateStoneArray(){
-     const s = new Array(PILE_COUNT).fill(0);
-     let sum = 0;
-     
-     // 生成前5堆石子，每堆1-6
-     for(let i=0;i<5;i++){
-       s[i] = getRand(1,6);
-       sum ^= s[i];
-     }
-     
-     // 如果前5堆的异或和不为0，第6堆等于这个异或和
-     if(sum !== 0){
-       s[5] = sum;
-     }else{
-       // 否则调整第一堆
-       if(s[0] > 1) s[0]--;
-       else s[0]++;
-       
-       // 重新计算前5堆的异或和
-       sum = 0;
-       for(let i=0;i<5;i++){
-         sum ^= s[i];
-       }
-       s[5] = sum;
-     }
-     
+     const s=new Array(PILE_COUNT).fill(0);
+     for(let i=0;i<PILE_COUNT;i++) s[i]=getRand(1,7);
+     let X=0; for(let i=0;i<PILE_COUNT;i++) X^=s[i];
+     if(X===0){ if(s[0]>1) s[0]--; else s[0]++; }
      return s;
    }
-   
-   // 5. 电脑选择拿石子的策略（按照C++逻辑移植）
-   function computerChooseStones(a){
-     // 计算当前所有堆的异或和
-     const Xor = getxor(a);
-     
-     // 找到第一个石子数大于等于异或和的堆，从中取走异或和个石子
-     for(let i=0;i<PILE_COUNT;i++){
-       if(a[i] >= Xor){
-         return {pile:i, take:Xor};
-       }
+
+   function nimChoose(a){
+     const X=getxor(a);
+     if(X===0){
+       const ne=[]; for(let i=0;i<PILE_COUNT;i++) if(a[i]>0) ne.push(i);
+       const pile=ne[Math.floor(Math.random()*ne.length)];
+       return {pile, take:getRand(1,a[pile])};
      }
-     
-     // 理论上不会执行到这里，因为根据尼姆博弈，一定存在这样的堆
-     // 如果找不到，就取第一个有石子的堆，取走1个石子
+     for(let i=0;i<PILE_COUNT;i++){
+       const target=(a[i]^X);
+       if(target<a[i]) return {pile:i, take:a[i]-target};
+     }
      for(let i=0;i<PILE_COUNT;i++) if(a[i]>0) return {pile:i, take:1};
      return {pile:0, take:1};
    }
 
-   // ===== DOM元素 =====
+   // ===== DOM =====
    const game1Btn=document.getElementById('game1Btn');
    const game2Btn=document.getElementById('game2Btn');
    const game1Container=document.getElementById('game1Container');
@@ -641,21 +808,43 @@
    const pilesRow=document.getElementById('pilesRow');
    const ground=document.getElementById('ground');
 
-   // ===== 通用弹窗函数 =====
+   // ===== 通用弹窗 =====
    function showAlertModal(title, message, icon='⚠️'){
      alertIcon.textContent=icon;
      alertTitle.textContent=title;
      alertMessage.textContent=message;
+
+     // 默认只有 "知道了"
      alertBtnRow.innerHTML = `<button class="result-btn" id="alertOkBtnInner">知道了</button>`;
      alertModal.style.display='flex';
      document.getElementById('alertOkBtnInner').addEventListener('click', closeAlertModal);
+   }
+
+   function showChoiceModal(title, message, icon, buttons){
+     alertIcon.textContent=icon || '⚠️';
+     alertTitle.textContent=title;
+     alertMessage.textContent=message;
+
+     alertBtnRow.innerHTML = '';
+     buttons.forEach(btn=>{
+       const el=document.createElement('button');
+       el.className='result-btn' + (btn.secondary ? ' result-btn-exit' : '');
+       el.textContent=btn.text;
+       el.addEventListener('click', ()=>{
+         closeAlertModal();
+         btn.onClick && btn.onClick();
+       });
+       alertBtnRow.appendChild(el);
+     });
+
+     alertModal.style.display='flex';
    }
 
    function closeAlertModal(){alertModal.style.display='none';}
    alertOkBtn.addEventListener('click', closeAlertModal);
    alertModal.addEventListener('click',(e)=>{if(e.target===alertModal) closeAlertModal();});
 
-   // ===== 结果弹窗 =====
+   // ===== 结果弹窗：按您的要求修改 =====
    function showResultModal(type, message, game){
      if(game==='game1'){
        game1State.gameOver=true; game1Active=false;
@@ -666,15 +855,15 @@
      }
 
      if(type==='win'){
-       resultIcon.textContent='🏆';
+       resultIcon.textContent='🏆';  // 奖杯标志
        resultTitle.textContent='胜利';
-       resultMessage.textContent='这就是人类的智慧吗';
+       resultMessage.textContent='这就是人类的智慧吗';  // 胜利时的消息
      }else if(type==='lose'){
-       resultIcon.textContent='💔';
+       resultIcon.textContent='💔';  // 心碎标志
        resultTitle.textContent='失败';
-       resultMessage.textContent=message;
+       resultMessage.textContent=message;  // 失败消息根据传入的参数显示
      }else{
-       resultIcon.textContent='🤝';
+       resultIcon.textContent='🤝';  // 握手标志
        resultTitle.textContent='平局';
        resultMessage.textContent='平局';
      }
@@ -682,7 +871,7 @@
      resultModal.style.display='flex';
    }
 
-   // ====== 游戏入口按钮 ======
+   // ====== 入口按钮 ======
    game1Btn.addEventListener('click',()=>{showGame('game1');showRules('game1');});
    game2Btn.addEventListener('click',()=>{showGame('game2');showRules('game2');});
    rulesCloseBtn.addEventListener('click',closeRules);
@@ -707,28 +896,27 @@
      else game2Container.style.display='block';
    }
 
-   // ====== 规则说明 ======
+   // ====== 规则（修改为30回合） ======
    function showRules(game){
      if(game==='game1'){
        rulesTitle.textContent='1+1 游戏规则';
        rulesText.innerHTML=`
-         <p>1. 开局每人有两个数字：你和电脑都是 1 和 1</p>
-         <p>2. 轮流操作：选你的一个数字 + 电脑的一个数字，取结果的个位数</p>
-         <p>   （例如：3+5=8，取8；7+8=15，取5）</p>
-         <p>3. 你选的那个数字会变成新的个位数</p>
-         <p>4. 谁先让两个数字都变成 0 就赢了</p>
-         <p>5. 如果玩了30回合还没分胜负，可以选择和棋或继续</p>
+         <p>1. 初始双方分别有两个数字 1</p>
+         <p>2. 双方轮流操作：选择自己任意一个数字 + 对方任意一个不为0的数字，然后取个位数</p>
+         <p>3. 先让自己两个数字都为 0 的一方获胜</p>
+         <p>4. 若走 30 个回合以上不分胜负，可选择和棋或继续</p>
+         <p>5. 违例 2 次直接判负</p>
        `;
        startGame1();
      }else{
        rulesTitle.textContent='拿石子游戏规则';
        rulesText.innerHTML=`
-         <p>1. 地上有6堆石子，每堆1-6个不等</p>
-         <p>2. 轮流操作：每次可以拿走任意一堆中的任意数量石子</p>
-         <p>   （可以拿1个、几个，甚至全部拿走）</p>
-         <p>3. 每次只能从一堆里拿，不能不拿</p>
-         <p>4. 谁拿走最后一颗石子谁就赢了</p>
-         <p>   （因为对方没石子可拿了）</p>
+         <p>1. 地上有 6 堆石子，初始每堆石子数量随机 (1-7)</p>
+         <p>2. 每人每次可从任意一堆石子里取出任意多枚石子扔掉</p>
+         <p>3. 可以取完，不能不取</p>
+         <p>4. 每次只能从一堆里取</p>
+         <p>5. 最后没石子可取的人就输了</p>
+         <p>6. 违例 2 次直接判负</p>
        `;
        startGame2();
      }
@@ -743,14 +931,13 @@
        if(rulesTimeLeft<=0) closeRules();
      },1000);
    }
-   
    function closeRules(){
      rulesModal.style.display='none';
      if(rulesTimer){clearInterval(rulesTimer);rulesTimer=null;}
    }
 
    // =========================
-   // ====== 1+1 游戏逻辑（保持不变）=====
+   // ====== 1+1 游戏逻辑 ======
    // =========================
    function clearPick(){
      pick.playerIdx=null; pick.oppIdx=null;
@@ -810,7 +997,8 @@
      updateNumberStatus('opponentNum1',game1State.opponentNums[0]);
      updateNumberStatus('opponentNum2',game1State.opponentNums[1]);
 
-     moveCounter1.textContent=`回合: ${game1State.rounds}`;
+     // 修改：只显示回合和违例次数
+     moveCounter1.textContent=`回合: ${game1State.rounds} | 违例次数: ${game1State.against}`;
      updateMakeMoveEnabled();
    }
 
@@ -821,6 +1009,7 @@
        playerTurn:true,
        gameOver:false,
        rounds:0,
+       against:0,
        jujue:0,
        vis: Array.from({length:10},()=>Array(10).fill(false))
      };
@@ -834,11 +1023,134 @@
 轮到你操作了！`;
    }
 
-   // 1+1游戏的其他函数（dfs, computerAI等）保持不变
-   // 由于代码长度限制，这里省略了1+1游戏的完整逻辑
-   // 您可以保持之前版本中的这些函数不变
+   // —— 正常胜负判定 ——
+   function endGame1Win(){
+     // 玩家自己两手清零 => 玩家获胜
+     showResultModal('win', "", 'game1');
+   }
+   function endGame1LoseNormal(){
+     // 电脑两手清零 => 玩家正常输
+     showResultModal('lose', "大人，时代变了", 'game1');
+   }
+   function endGame1LoseViolation(){
+     // 违例输
+     showResultModal('lose', "给过你一次机会了哦", 'game1');
+   }
+   function endGame1Draw(msg){
+     showResultModal('draw', "", 'game1');
+   }
 
-   // ====== 拿石子游戏逻辑（使用移植的算法）=====
+   // 30 回合处理（改为每30回合）
+   function handleRound30(){
+     const first = (game1State.jujue === 0);
+     const header = first ? "下了30个回合，您不累吗" : "又下了30个回合，您不累吗";
+     const extra = first
+       ? "输出 114514 则为和棋，输出 1919810 则继续下"
+       : `您已经拒绝 ${game1State.jujue} 次了\n您简直就是一块会说话的钢板！\n继续玩下去吧\n`;
+
+     showChoiceModal(
+       "提示",
+       header + "\n" + extra,
+       "⚠️",
+       [
+         { text: "和棋(114514)", onClick: ()=>{ endGame1Draw("平局"); } },
+         { text: "继续(1919810)", secondary:true, onClick: ()=>{
+             game1State.jujue++;
+             game1State.rounds = 0; // 重置回合计数
+             updateGame1Display();
+             game1Console.textContent += `\n${first ? "世界上只有一种英雄主义，那就是在看清游戏的真相后，仍然热爱游戏\nCome on! 继续玩下去吧" : "继续玩下去吧" }\n`;
+           }
+         },
+         { text: "调皮(其他)", onClick: ()=>{
+             // 模拟 C++ 输入错误 => 违例+1
+             game1State.against++;
+             game1Console.textContent += `\n调皮\n违例了哦，再有一次判你输信不信^-^\n`;
+             showAlertModal("违例提醒", `违例次数：${game1State.against}/2`,'⚠️');
+             if(game1State.against>=2) endGame1LoseViolation();
+             updateGame1Display();
+           }
+         }
+       ]
+     );
+   }
+
+   makeMoveBtn.addEventListener('click',()=>{
+     if(!game1Active || !game1State.playerTurn || game1State.gameOver) return;
+
+     const pi=pick.playerIdx, oi=pick.oppIdx;
+     const invalid=(pi===null||oi===null||pi<0||pi>1||oi<0||oi>1||game1State.playerNums[pi]===0||game1State.opponentNums[oi]===0);
+
+     if(invalid){
+       game1State.against++;
+       game1Console.textContent += `\n违例了哦，再有一次判你输信不信^-^\n`;
+       showAlertModal('违例提醒',`违例次数：${game1State.against}/2`,'⚠️');
+       if(game1State.against>=2){
+         endGame1LoseViolation(); // ✅ 违例输显示"给过你一次机会了哦"
+         return;
+       }
+       clearPick(); updateGame1Display();
+       return;
+     }
+
+     // 玩家操作
+     const result=(game1State.playerNums[pi]+game1State.opponentNums[oi])%10;
+     game1State.playerNums[pi]=result;
+
+     game1Console.textContent+=
+`\n你操作：你的数字${pi+1} + 电脑的数字${oi+1} = ${result}
+当前状态：
+你的数字：${game1State.playerNums[0]} ${game1State.playerNums[1]}
+电脑的数字：${game1State.opponentNums[0]} ${game1State.opponentNums[1]}`;
+
+     clearPick();
+     updateGame1Display();
+
+     // 玩家操作后立刻判胜
+     if(game1State.playerNums[0]===0 && game1State.playerNums[1]===0){
+       endGame1Win();
+       return;
+     }
+
+     game1State.playerTurn=false;
+     makeMoveBtn.disabled=true;
+     game1Console.textContent+='\n电脑思考中...';
+
+     setTimeout(()=>{
+       // 电脑走子
+       const ok = computerAI();
+       updateGame1Display();
+
+       game1Console.textContent+=
+`\n电脑操作完成
+当前状态：
+你的数字：${game1State.playerNums[0]} ${game1State.playerNums[1]}
+电脑的数字：${game1State.opponentNums[0]} ${game1State.opponentNums[1]}`;
+
+       // 电脑走完后判负
+       if(game1State.opponentNums[0]===0 && game1State.opponentNums[1]===0){
+         endGame1LoseNormal(); // ✅ 正常输：显示"失败/大人，时代变了"
+         return;
+       }
+
+       // 电脑走完算一个回合结束：cnt++
+       game1State.rounds++;
+       updateGame1Display();
+
+       // 30 回合提醒（改为30回合）
+       if(game1State.rounds>=30 && !game1State.gameOver){
+         handleRound30();
+       }
+
+       // 若 computerAI() 内部判了 vis 平局，会直接结束
+       if(!ok || game1State.gameOver) return;
+
+       game1State.playerTurn=true;
+       game1Console.textContent+='\n轮到你操作了！';
+       updateMakeMoveEnabled();
+     },450);
+   });
+
+   // ====== 拿石子游戏（修改弹窗内容） ======
    function pendingTotal(){return game2State.pending.count;}
    function pendingPile(){return game2State.pending.pile;}
 
@@ -959,6 +1271,7 @@
        piles:init,
        playerTurn:true,
        gameOver:false,
+       violationCount:0,
        pending:{pile:null,count:0},
        aiBusy:false
      };
@@ -971,14 +1284,14 @@
 
    function checkGame2AfterPlayer(){
      if(empty(game2State.piles)){
-       showResultModal('win','','game2');
+       showResultModal('win','','game2'); // 胜利时显示"这就是人类的智慧吗"
        return true;
      }
      return false;
    }
    function checkGame2AfterAI(){
      if(empty(game2State.piles)){
-       showResultModal('lose','大人，时代变了','game2');
+       showResultModal('lose','大人，时代变了','game2'); // 正常失败显示"大人，时代变了"
        return true;
      }
      return false;
@@ -988,7 +1301,12 @@
      if(!game2Active || !game2State.playerTurn || game2State.gameOver || game2State.aiBusy) return;
 
      if(pendingPile()===null || pendingTotal()<=0){
-       showAlertModal('提醒','请先选择要拿走的石子','⚠️');
+       game2State.violationCount++;
+       showAlertModal('违例提醒',`违例次数：${game2State.violationCount}/2`,'⚠️');
+       if(game2State.violationCount>=2){
+         // 违例两次失败显示"给过你一次机会了哦"
+         showResultModal('lose','给过你一次机会了哦','game2');
+       }
        return;
      }
 
@@ -1055,7 +1373,7 @@
    async function aiTurn(){
      if(game2State.gameOver) return;
 
-     const {pile, take}=computerChooseStones(game2State.piles);
+     const {pile, take}=nimChoose(game2State.piles);
 
      game2State.aiBusy=true;
      game2State.pending.pile=pile;
@@ -1093,7 +1411,7 @@
      game2Console.textContent+='\n轮到你操作了！';
    }
 
-   // ===== 雪花效果 =====
+   // ===== 雪花 =====
    function createSnowflakes(){
      const snowflakesContainer=document.getElementById('snowflakes');
      for(let i=0;i<50;i++){
@@ -1111,7 +1429,6 @@
        snowflakesContainer.appendChild(snowflake);
      }
    }
-   
    const style=document.createElement('style');
    style.textContent=`
      @keyframes fall{
@@ -1121,7 +1438,6 @@
    `;
    document.head.appendChild(style);
 
-   // ===== 初始化 =====
    function init(){
      game1Container.style.display='none';
      game2Container.style.display='none';
@@ -1131,7 +1447,6 @@
      clearPick();
      updateTakeBtn();
    }
-   
    window.addEventListener('DOMContentLoaded', init);
  </script>
 </body>
